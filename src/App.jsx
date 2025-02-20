@@ -1,6 +1,7 @@
 import { useState } from "react"
 import Form from "./Components/Form"
 import Result from "./Components/Result"
+import SideBar from "./Components/SideBar"
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -34,7 +35,7 @@ function App() {
     }
 
     
-    console.log(messages)
+    // console.log(messages)
     // setInput("")
 
     // Call API
@@ -108,38 +109,49 @@ function App() {
     }
 
     try{
-      const summary = await sumarize(message.text, {
-        params: {
-          max_length: 150,
-          min_length: 30,
-          do_sample: false
-        }
+      // Summarize message
+      const options = {
+        sharedContext: 'This is a scientific article',
+        type: 'key-points',
+        format: 'markdown',
+        length: 'medium',
+      };
+
+      const summarizer = await self.ai.summarizer.create(options);
+
+      const summary = await summarizer.summarize(messages.text, {
+        context: 'This article is intended for a tech-savvy audience.',
       })
 
+      console.log(summary)
+
       setMessages((prev) => prev.map((msg) => (msg.id === 
-        messageId ? {...msg, summary: summary.summary_text} : msg )))
+        messageId ? {...msg, summary: summary} : msg )))
     } catch (error) {
       console.error("Summarization failed", error)
     }
   }
 
   return (
-    <div className="">
-      <Result 
-        messages={messages} 
-        selectedLanguage={selectedLanguage}
-        setSelectedLanguage={setSelectedLanguage}
-        handleTranslate={handleTranslate}
-        handleSummarize={handleSummarize}
-        languages={languages}
+    <div className="w-screen h-screen flex">
 
-      />
-      
-      <Form 
-        input={input}  
-        handleSend={handleSend} 
-        setInput={setInput}
-      />
+      <SideBar />
+      <main className="bg-slate-100 p-4 w-3/4">
+        <Result 
+          messages={messages} 
+          selectedLanguage={selectedLanguage}
+          setSelectedLanguage={setSelectedLanguage}
+          handleTranslate={handleTranslate}
+          handleSummarize={handleSummarize}
+          languages={languages}
+        />
+        
+        <Form 
+          input={input}  
+          handleSend={handleSend} 
+          setInput={setInput}
+        />
+      </main>
     </div>
   )
 }

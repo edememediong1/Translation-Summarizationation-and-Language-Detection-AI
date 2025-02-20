@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Result({messages, setSelectedLanguage, handleTranslate , selectedLanguage, languages}) {
+function Result({messages, setSelectedLanguage, handleTranslate , selectedLanguage, languages, handleSummarize}) {
   
   const languageTagToHumanReadable = (languageTag, targetLanguage) => {
     const displayNames = new Intl.DisplayNames([targetLanguage], {
@@ -25,13 +25,15 @@ function Result({messages, setSelectedLanguage, handleTranslate , selectedLangua
         
 
           <div className="flex gap-2">
-            {message.text.length > 150 && message.detectedLanguage === "en" && !message.summary && (
+            {(message.text.length > 150 && message.detectedLanguage === "en" && !message.summary) ? (
               <button
-                className="flex items-center gap-1"
+                type="submit"
+                className="flex items-center gap-1 bg-slate-400"
+                onClick={() => handleSummarize(message.id)}
               >
                 Summarize
               </button>
-            )}
+            ): `Character Count: ${message.text.length}`}
           </div>
 
           <label htmlFor="languageSelect"> Translate to:</label>
