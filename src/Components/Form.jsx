@@ -13,7 +13,7 @@ function Form({input, setInput, handleSend}) {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message here..."
               rows={3}
-              className="w-[90%] resize-none flex justify-center items-center rounded-[40px] px-4 h-[80%] font-poppins outline-0 text-xl"
+              className="bg-none w-[90%] resize-none flex justify-center items-center rounded-[40px] px-4 h-[80%] font-poppins outline-0 text-xl"
               />
            
 
