@@ -2,6 +2,7 @@ import { useState } from "react"
 import Form from "./Components/Form"
 import Result from "./Components/Result"
 import SideBar from "./Components/SideBar"
+import NavBar from "./Components/NavBar"
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -133,24 +134,28 @@ function App() {
   }
 
   return (
-    <div className="w-screen h-screen flex">
+    <div className="w-screen min-h-screen flex gap-0 font-poppins">
 
       <SideBar />
-      <main className="bg-slate-100 p-4 w-3/4">
-        <Result 
-          messages={messages} 
-          selectedLanguage={selectedLanguage}
-          setSelectedLanguage={setSelectedLanguage}
-          handleTranslate={handleTranslate}
-          handleSummarize={handleSummarize}
-          languages={languages}
-        />
+      <main className=" w-3/4 ">
+        <NavBar />
+        <section className="w-full h-full p-4">  
+          <Result 
+            messages={messages} 
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+            handleTranslate={handleTranslate}
+            handleSummarize={handleSummarize}
+            languages={languages}
+          />
+          
+          <Form 
+            input={input}  
+            handleSend={handleSend} 
+            setInput={setInput}
+          />
+        </section>
         
-        <Form 
-          input={input}  
-          handleSend={handleSend} 
-          setInput={setInput}
-        />
       </main>
     </div>
   )
