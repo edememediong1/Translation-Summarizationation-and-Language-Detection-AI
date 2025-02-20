@@ -27,22 +27,33 @@ function App() {
       id: Date.now(),
       text: input,
       type: "user",
-      detectedLang: "",
+      detectedLanguage: "",
+      confidence: 0,
       translations: {},
       summary: ""
     }
 
     setMessages((prev) => [...prev, newMessage])
-    setInput("")
+    // console.log(messages.newMessage.text)
+    // setInput("")
 
     // Call API
 
     try{
-      const detectedLang = await detectedLanguage(input)
-      newMessage.detectedLang = detectedLang
+      const detector = await self.ai.languageDetector.create()
+      const {detectedLanguage, confidence} = (await detector.detect(input.trim()))[0]
+      // console.log(detectedLanguage)
+      newMessage.detectedLanguage = detectedLanguage
+      
+      console.log(newMessage)
+      
+
+      // console.log(languageTagToHumanReadable(detectedLanguage, 'en'))
 
       setMessages((prev) => prev.map((msg) => 
-        (msg.id === newMessage.id ? {...msg, detectedLang} : msg)))
+        (msg.id === newMessage.id ? {...msg, detectedLanguage} : msg)))
+
+      // console.log(messages)
     } catch (error){
       console.error("Language detection Failed", error)
     }
@@ -105,6 +116,7 @@ function App() {
         handleTranslate={handleTranslate}
         handleSummarize={handleSummarize}
         languages={languages}
+
       />
       
       <Form 

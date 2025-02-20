@@ -1,6 +1,13 @@
 import React from 'react'
 
 function Result({messages, setSelectedLanguage, handleTranslate , selectedLanguage, languages}) {
+  
+  const languageTagToHumanReadable = (languageTag, targetLanguage) => {
+    const displayNames = new Intl.DisplayNames([targetLanguage], {
+      type: 'language',
+    });
+    return displayNames.of(languageTag);
+  };
   return (
     <div className="flex-1 overflow-y-auto space-y-4 mb-4">
       {messages.map((message) => (
@@ -11,14 +18,14 @@ function Result({messages, setSelectedLanguage, handleTranslate , selectedLangua
             </div>
           </div>
 
-          {message.detectedLang && (
-            <div className="text-sm flex items-center">
-                Detected: {message.detectedLang}
-            </div>
-          )}
+          
+          <div className="text-sm flex items-center">
+              Detected: {languageTagToHumanReadable(message.detectedLanguage)}
+          </div>
+        
 
           <div className="flex gap-2">
-            {message.text.length > 150 && message.detectedLang === "en" && !message.summary && (
+            {message.text.length > 150 && message.detectedLanguage === "en" && !message.summary && (
               <button
                 className="flex items-center gap-1"
               >
