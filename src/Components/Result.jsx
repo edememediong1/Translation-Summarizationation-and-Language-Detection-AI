@@ -20,7 +20,7 @@ function Result({messages, setSelectedLanguage, handleTranslate , selectedLangua
 
           
           <div className="text-sm flex items-center">
-              Detected: {languageTagToHumanReadable(message.detectedLanguage)}
+              Detected: {message.detectedLanguage}
           </div>
         
 
@@ -38,13 +38,13 @@ function Result({messages, setSelectedLanguage, handleTranslate , selectedLangua
           <select 
             name="languageSelect" 
             id="languageSelect"
-            onChange={(value) => {
-              setSelectedLanguage(value)
-              handleTranslate(message.id, value)
+            onChange={(e) => {
+              setSelectedLanguage(e.target.value)
+              handleTranslate(message.id, e.target.value)
             }}
           >
             {Object.entries(languages).map(([code, lang]) => (
-              <option key={code} value={lang}>
+              <option key={code} value={code}>
                 {lang}
               </option>
               ))}

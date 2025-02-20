@@ -33,8 +33,8 @@ function App() {
       summary: ""
     }
 
-    setMessages((prev) => [...prev, newMessage])
-    // console.log(messages.newMessage.text)
+    
+    console.log(messages)
     // setInput("")
 
     // Call API
@@ -45,15 +45,18 @@ function App() {
       // console.log(detectedLanguage)
       newMessage.detectedLanguage = detectedLanguage
       
-      console.log(newMessage)
+      // console.log(newMessage)
       
 
       // console.log(languageTagToHumanReadable(detectedLanguage, 'en'))
+      setMessages((prev) => [...prev, newMessage])
 
       setMessages((prev) => prev.map((msg) => 
         (msg.id === newMessage.id ? {...msg, detectedLanguage} : msg)))
 
-      // console.log(messages)
+      
+
+      console.log(messages)
     } catch (error){
       console.error("Language detection Failed", error)
     }
@@ -65,10 +68,23 @@ function App() {
       return
     }
 
+    const sourceLanguage = message.detectedLanguage
+    if (!['en', 'ja', 'es'].includes(sourceLanguage)) {
+      const translation = 'Currently, only English ↔ Spanish and English ↔ Japanese are supported.';
+      return;
+    }
+    console.log(sourceLanguage)
+    console.log(targetLang)
     try{
       //Translate message
 
-      const translation = await handleTranslate(message.text, { to: targetLang })
+      const translator = await self.ai.translator.create({
+        sourceLanguage,
+        targetLanguage: targetLang,
+      });
+
+      const translation = await translator.translate(input.trim())
+      console.log(translation)
       setMessages((prev) => 
         prev.map((msg) =>
           msg.id === messageId
@@ -76,7 +92,7 @@ function App() {
             ...msg,
             translations: {
               ...msg.translations,
-              [targetLang]: translation.text
+              [targetLang]: translation
             }
           } : msg
       ))
