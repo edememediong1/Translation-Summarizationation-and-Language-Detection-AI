@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Result({messages setSelectedLanguage, handleTranslate}) {
+function Result({messages, setSelectedLanguage, handleTranslate , selectedLanguage, languages}) {
   return (
     <div className="flex-1 overflow-y-auto space-y-4 mb-4">
       {messages.map((message) => (
@@ -27,6 +27,7 @@ function Result({messages setSelectedLanguage, handleTranslate}) {
             )}
           </div>
 
+          <label htmlFor="languageSelect"> Translate to:</label>
           <select 
             name="languageSelect" 
             id="languageSelect"

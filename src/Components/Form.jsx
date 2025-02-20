@@ -1,9 +1,9 @@
 
 
-function Form({input, setInput}) {
+function Form({input, setInput, handleSend}) {
   return (
     <div>
-        <form >
+        <form onSubmit={handleSend}>
            
             <textarea 
               name="message" 
