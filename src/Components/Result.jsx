@@ -13,7 +13,7 @@ function Result({messages, setSelectedLanguage, handleTranslate , selectedLangua
       {messages.map((message) => (
         <div key={message.id} className="space-y-2 ">
           <div className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-            <div className="bg-slate-100 rounded-2xl px-4 py-3 max-w-[80%] rounded-tr-none">
+            <div className="bg-slate-100 rounded-2xl p-4 max-w-[80%] rounded-tr-none">
               {message.text}
             </div>
           </div>
