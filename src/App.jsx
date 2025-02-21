@@ -1,13 +1,17 @@
-import { useState } from "react"
-import Form from "./Components/Form"
-import Result from "./Components/Result"
-import SideBar from "./Components/SideBar"
-import NavBar from "./Components/NavBar"
+import { useState, useEffect } from "react";
+import Form from "./Components/Form";
+import Result from "./Components/Result";
+import SideBar from "./Components/SideBar";
+import NavBar from "./Components/NavBar";
 
 function App() {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState("")
-  const [selectedLanguage, setSelectedLanguage] = useState("en")
+  const [chats, setChats] = useState(() => {
+    const savedChats = localStorage.getItem("chats");
+    return savedChats ? JSON.parse(savedChats) : [];
+  });
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [input, setInput] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const languages = {
     en: "English",
@@ -16,149 +20,230 @@ function App() {
     ru: "Russian",
     tr: "Turkish",
     fr: "French"
-  }
+  };
+
+  useEffect(() => {
+    localStorage.setItem("chats", JSON.stringify(chats));
+  }, [chats]);
+
+  const createNewChat = () => {
+    const newChat = {
+      id: Date.now(),
+      messages: [],
+      createdAt: new Date().toISOString()
+    };
+    setChats(prev => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+  };
 
   const handleSend = async (e) => {
-    e.preventDefault()
-    if (!input.trim()){
-      return
-    }
+    e.preventDefault();
+    if (!input.trim()) return;
 
-    // Add user message
     const newMessage = {
       id: Date.now(),
       text: input,
       type: "user",
       detectedLanguage: "",
-      confidence: 0,
       translations: {},
       summary: ""
+    };
+
+    try {
+      const detector = await self.ai.languageDetector.create();
+      const { detectedLanguage } = (await detector.detect(input.trim()))[0];
+      newMessage.detectedLanguage = detectedLanguage;
+
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat.id === activeChatId
+            ? { ...chat, messages: [...chat.messages, newMessage] }
+            : chat
+        )
+      );
+      setInput("");
+    } catch (error) {
+      console.error("Language detection Failed", error);
     }
-
-    
-    // console.log(messages)
-    // setInput("")
-
-    // Call API
-
-    try{
-      const detector = await self.ai.languageDetector.create()
-      const {detectedLanguage, confidence} = (await detector.detect(input.trim()))[0]
-      // console.log(detectedLanguage)
-      newMessage.detectedLanguage = detectedLanguage
-      
-      // console.log(newMessage)
-      
-
-      // console.log(languageTagToHumanReadable(detectedLanguage, 'en'))
-      setMessages((prev) => [...prev, newMessage])
-
-      setMessages((prev) => prev.map((msg) => 
-        (msg.id === newMessage.id ? {...msg, detectedLanguage} : msg)))
-
-      
-
-      console.log(messages)
-    } catch (error){
-      console.error("Language detection Failed", error)
-    }
-  } 
+  };
 
   const handleTranslate = async (messageId, targetLang) => {
-    const message = messages.find((m) => m.id === messageId)
-    if (!message){
-      return
-    }
+    setChats(prevChats => 
+      prevChats.map(chat => {
+        if (chat.id !== activeChatId) return chat;
+        
+        return {
+          ...chat,
+          messages: chat.messages.map(msg => {
+            if (msg.id !== messageId) return msg;
+            return { ...msg, loading: true };
+          })
+        };
+      })
+    );
 
-    const sourceLanguage = message.detectedLanguage
-    if (!['en', 'ja', 'es'].includes(sourceLanguage)) {
-      const translation = 'Currently, only English ↔ Spanish and English ↔ Japanese are supported.';
-      return;
-    }
-    console.log(sourceLanguage)
-    console.log(targetLang)
-    try{
-      //Translate message
+    try {
+      const activeChat = chats.find(chat => chat.id === activeChatId);
+      const message = activeChat?.messages.find(m => m.id === messageId);
+      if (!message || !message.detectedLanguage) return;
+
+      // Check supported translation pairs
+      const sourceLanguage = message.detectedLanguage;
+      const supportedPairs = ['en', 'es', 'ja']; // Add your supported pairs
+      if (!supportedPairs.includes(sourceLanguage)) {
+        throw new Error('Unsupported source language for translation');
+      }
 
       const translator = await self.ai.translator.create({
         sourceLanguage,
         targetLanguage: targetLang,
       });
 
-      const translation = await translator.translate(input.trim())
-      console.log(translation)
-      setMessages((prev) => 
-        prev.map((msg) =>
-          msg.id === messageId
-          ? {
-            ...msg,
-            translations: {
-              ...msg.translations,
-              [targetLang]: translation
-            }
-          } : msg
-      ))
+      const translation = await translator.translate(message.text);
+      
+      setChats(prevChats => 
+        prevChats.map(chat => {
+          if (chat.id !== activeChatId) return chat;
+          
+          return {
+            ...chat,
+            messages: chat.messages.map(msg => {
+              if (msg.id !== messageId) return msg;
+              return {
+                ...msg,
+                translations: { ...msg.translations, [targetLang]: translation },
+                loading: false
+              };
+            })
+          };
+        })
+      );
     } catch (error) {
-      console.error("Translation failed", error)  
+      setChats(prevChats => 
+        prevChats.map(chat => {
+          if (chat.id !== activeChatId) return chat;
+          
+          return {
+            ...chat,
+            messages: chat.messages.map(msg => {
+              if (msg.id !== messageId) return msg;
+              return {
+                ...msg,
+                error: error.message || 'Translation failed',
+                loading: false
+              };
+            })
+          };
+        })
+      );
     }
-  }
+  };
 
   const handleSummarize = async (messageId) => {
-    const message = messages.find((m) => m.id === messageId)
-    if (!message){
-      return
-    }
+    setChats(prevChats => 
+      prevChats.map(chat => {
+        if (chat.id !== activeChatId) return chat;
+        
+        return {
+          ...chat,
+          messages: chat.messages.map(msg => {
+            if (msg.id !== messageId) return msg;
+            return { ...msg, loading: true };
+          })
+        };
+      })
+    );
 
-    try{
-      // Summarize message
-      const options = {
-        sharedContext: 'This is a scientific article',
+    try {
+      const activeChat = chats.find(chat => chat.id === activeChatId);
+      const message = activeChat?.messages.find(m => m.id === messageId);
+      if (!message || message.detectedLanguage !== 'en') return;
+
+      const summarizer = await self.ai.summarizer.create({
         type: 'key-points',
         format: 'markdown',
-        length: 'medium',
-      };
+        length: 'medium'
+      });
 
-      const summarizer = await self.ai.summarizer.create(options);
-
-      const summary = await summarizer.summarize(messages.text, {
-        context: 'This article is intended for a tech-savvy audience.',
-      })
-
-      console.log(summary)
-
-      setMessages((prev) => prev.map((msg) => (msg.id === 
-        messageId ? {...msg, summary: summary} : msg )))
+      const summary = await summarizer.summarize(message.text);
+      
+      setChats(prevChats => 
+        prevChats.map(chat => {
+          if (chat.id !== activeChatId) return chat;
+          
+          return {
+            ...chat,
+            messages: chat.messages.map(msg => {
+              if (msg.id !== messageId) return msg;
+              return {
+                ...msg,
+                summary: summary,
+                loading: false
+              };
+            })
+          };
+        })
+      );
     } catch (error) {
-      console.error("Summarization failed", error)
+      setChats(prevChats => 
+        prevChats.map(chat => {
+          if (chat.id !== activeChatId) return chat;
+          
+          return {
+            ...chat,
+            messages: chat.messages.map(msg => {
+              if (msg.id !== messageId) return msg;
+              return {
+                ...msg,
+                error: error.message || 'Summarization failed',
+                loading: false
+              };
+            })
+          };
+        })
+      );
     }
-  }
+  };
+
+  const activeChat = chats.find(chat => chat.id === activeChatId);
 
   return (
     <div className="w-screen min-h-screen flex gap-0 font-poppins">
-
-      <SideBar />
+      <SideBar 
+        chats={chats}
+        activeChatId={activeChatId}
+        setActiveChatId={setActiveChatId}
+        createNewChat={createNewChat}
+      />
+      
       <main className=" w-3/4 ">
         <NavBar />
         <section className="w-full h-full p-4">  
-          <Result 
-            messages={messages} 
-            selectedLanguage={selectedLanguage}
-            setSelectedLanguage={setSelectedLanguage}
-            handleTranslate={handleTranslate}
-            handleSummarize={handleSummarize}
-            languages={languages}
-          />
-          
-          <Form 
-            input={input}  
-            handleSend={handleSend} 
-            setInput={setInput}
-          />
+          {activeChat ? (
+            <>
+              <Result 
+                messages={activeChat.messages} 
+                selectedLanguage={selectedLanguage}
+                setSelectedLanguage={setSelectedLanguage}
+                handleTranslate={handleTranslate}
+                handleSummarize={handleSummarize}
+                languages={languages}
+              />
+              <Form 
+                input={input}  
+                handleSend={handleSend} 
+                setInput={setInput}
+              />
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-gray-500">Select or create a chat to start</p>
+            </div>
+          )}
         </section>
-        
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
